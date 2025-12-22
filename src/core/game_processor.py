@@ -434,7 +434,7 @@ class GameProcessor:
         """
         根据开牌结果生成模拟牌型数据 (龙虎版本)
 
-        龙虎只需要2张牌，无对子概念
+        优先从配置文件 default_result_pai 读取，否则使用硬编码默认值
 
         Args:
             result: "1"=龙赢, "2"=虎赢, "3"=和
@@ -443,28 +443,27 @@ class GameProcessor:
         Returns:
             {"1": "13|h", "2": "10|r"}  龙牌和虎牌
         """
-        # 龙虎模拟牌型 - 只需2张牌
+        from core.config import config
+
+        # 优先从配置文件读取 (key格式: "1|0", "2|0", "3|0")
+        config_key = f"{result}|{ext}"
+        default_pai_config = config.get("default_result_pai", {})
+        config_pai = default_pai_config.get(config_key)
+
+        if config_pai and isinstance(config_pai, dict) and "1" in config_pai:
+            self.log(f"[模拟牌型] 从配置读取: {config_key} -> {config_pai}")
+            return config_pai
+
+        # 配置中没有，使用硬编码默认值
         base_pai = {
-            "1": {  # 龙赢 (K > 10)
-                "dragon": "13|h",  # 龙: K黑桃
-                "tiger": "10|r",   # 虎: 10红桃
-            },
-            "2": {  # 虎赢 (8 < Q)
-                "dragon": "8|h",   # 龙: 8黑桃
-                "tiger": "12|r",   # 虎: Q红桃
-            },
-            "3": {  # 和局 (7 = 7)
-                "dragon": "7|h",   # 龙: 7黑桃
-                "tiger": "7|r",    # 虎: 7红桃
-            }
+            "1": {"1": "13|h", "2": "10|r"},  # 龙赢 (K > 10)
+            "2": {"1": "8|h", "2": "12|r"},   # 虎赢 (8 < Q)
+            "3": {"1": "7|h", "2": "7|r"},    # 和局 (7 = 7)
         }
 
-        base = base_pai.get(result, base_pai["1"])
-
-        return {
-            "1": base["dragon"],
-            "2": base["tiger"]
-        }
+        pai = base_pai.get(result, base_pai["1"])
+        self.log(f"[模拟牌型] 使用默认值: result={result} -> {pai}")
+        return pai
 
     def _get_default_pai(self) -> Dict[str, str]:
         """获取默认牌型数据 (龙虎版本 - 当所有方案都失败时使用)"""

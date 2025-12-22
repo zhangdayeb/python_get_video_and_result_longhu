@@ -178,7 +178,7 @@ async def get_last_n_results(desk_id: int, n: int = 2) -> APIResponse:
 
 async def sync_incremental(desk_id: int, records: list) -> APIResponse:
     """
-    增量同步露珠数据
+    增量同步露珠数据（龙虎专用，game_type=2）
 
     Args:
         desk_id: 桌号
@@ -195,7 +195,8 @@ async def sync_incremental(desk_id: int, records: list) -> APIResponse:
     url = f"{base_url}/bjl/luzhu/sync_incremental"
     payload = {
         "table_id": table_id,
-        "records": records
+        "records": records,
+        "game_type": 2  # 龙虎固定为2
     }
 
     try:

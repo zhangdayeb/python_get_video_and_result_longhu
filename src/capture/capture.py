@@ -57,17 +57,17 @@ class CardCapture:
                 self.card_positions = positions
                 logger.info(f"[截图] 从配置加载 {len(positions)} 个牌位坐标")
             else:
-                # 默认坐标（兜底）- 龙虎只需2张牌
+                # 默认坐标（兜底）- 龙虎只需2张牌，基于1280x720分辨率
                 self.card_positions = [
-                    {"index": 1, "name": "龙", "x": 200, "y": 600, "width": 85, "height": 120, "direction": "v"},
-                    {"index": 2, "name": "虎", "x": 950, "y": 600, "width": 85, "height": 120, "direction": "v"},
+                    {"index": 1, "name": "龙", "x": 296, "y": 577, "width": 87, "height": 123, "direction": "v"},
+                    {"index": 2, "name": "虎", "x": 897, "y": 577, "width": 87, "height": 123, "direction": "v"},
                 ]
                 logger.info("[截图] 使用默认牌位坐标 (龙虎2张牌)")
         except Exception as e:
             logger.error(f"[截图] 加载配置失败: {e}，使用默认坐标")
             self.card_positions = [
-                {"index": 1, "name": "龙", "x": 200, "y": 600, "width": 85, "height": 120, "direction": "v"},
-                {"index": 2, "name": "虎", "x": 950, "y": 600, "width": 85, "height": 120, "direction": "v"},
+                {"index": 1, "name": "龙", "x": 296, "y": 577, "width": 87, "height": 123, "direction": "v"},
+                {"index": 2, "name": "虎", "x": 897, "y": 577, "width": 87, "height": 123, "direction": "v"},
             ]
 
     async def capture_full_page(self, page, filename: str = None) -> Optional[str]:
