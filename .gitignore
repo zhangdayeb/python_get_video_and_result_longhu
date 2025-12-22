@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Models (文件太大)
+models/
+*.pth
+*.pt
+*.onnx
+*.h5
+*.pb
+*.tflite
+
+# Screenshots and Logs (运行时生成)
+screenshots/
+logs/
+shared/
+temp/
+
+# Browser User Data
+chromium_user_data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config with credentials (如需要可取消注释)
+# config.json
+
+# Temp files
+*.tmp
+*.temp
+*.log
+*.bak
+*.pid
+
+# Environment variables (敏感配置)
+.env
+.env.local
+.env.*.local
+
+# Node (以防将来使用)
+node_modules/
+package-lock.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# 备份和编辑器临时文件
+*~
+*.orig
+*.rej

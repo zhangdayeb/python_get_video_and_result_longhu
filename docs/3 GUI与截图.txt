@@ -1,0 +1,245 @@
+================================================================================
+                            GUI与截图说明 (龙虎版本)
+================================================================================
+
+1. GUI界面布局
+--------------------------------------------------------------------------------
+
+┌─────────────────────────────────────────────────────────────────┐
+│                     龙虎监控系统 v5.1                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  [打开浏览器] [更新视频地址] [同步路单]                           │
+│                                                                 │
+│  ┌─────────────────────────────┐  ┌───────────────────────────┐│
+│  │ 台桌信息                     │  │ 截图预览                   ││
+│  │                             │  │                           ││
+│  │ 桌号: F1      靴号: 1       │  │ ┌───────────────────────┐ ││
+│  │ 铺号: 15      倒计时: 30秒  │  │ │                       │ ││
+│  │ 状态: 请下注                │  │ │    开牌截图预览         │ ││
+│  │                             │  │ │                       │ ││
+│  │ 龙牌: ♠K                   │  │ └───────────────────────┘ ││
+│  │ 虎牌: ♥10                  │  │                           ││
+│  │ 结果: 龙赢 (13:10)          │  │ 龙牌: [龙]  虎牌: [虎]   ││
+│  │                             │  │                          ││
+│  └─────────────────────────────┘  └───────────────────────────┘│
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ 日志输出                                                     ││
+│  │ [19:30:00] 系统已启动                                        ││
+│  │ [19:30:05] 浏览器已打开                                      ││
+│  │ [19:30:10] [开牌截图] 局号12345                              ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+
+2. 截图预览区域
+--------------------------------------------------------------------------------
+
+2.1 大截图预览
+
+显示完整的开牌区域截图 (F1_game12345.png)
+
+2.2 2张小扑克预览 (龙虎版本)
+
+从 card_crops 加载裁剪的单张扑克图片:
+
+    位置    索引    文件名示例
+    ----    ----    ----------
+    龙牌    1       F1_game12345_card1.png
+    虎牌    2       F1_game12345_card2.png
+
+2.3 预览更新逻辑
+
+# main.py
+
+def _update_screenshot_preview(self, screenshot_path: str, card_data: dict):
+    # 1. 更新大截图预览
+    img = Image.open(screenshot_path)
+    self.big_preview.config(image=photo)
+
+    # 2. 更新2张小扑克预览 (龙虎只有2张牌)
+    if card_data.get("card_crops"):
+        self._update_card_previews(card_data)
+
+================================================================================
+
+3. 回调流程
+--------------------------------------------------------------------------------
+
+3.1 开牌截图回调
+
+# browser_monitor 截图完成后触发
+def on_cards_captured(screenshot_path: str, card_data: dict):
+    """
+    参数:
+    - screenshot_path: 截图文件路径
+    - card_data: {
+        "desk_id": "F1",
+        "game_number": "12345",
+        "xue": 1,
+        "pu": 15,
+        "card_data": {...},      # DOM解析的牌面
+        "card_crops": {...},     # 裁剪的小图路径
+        "ai_result": {...}       # AI识别结果
+      }
+    """
+    # 1. 更新截图预览
+    self._update_screenshot_preview(screenshot_path, card_data)
+
+    # 2. 更新牌型显示 (使用 card_data['card_data'] 或 ai_result)
+    # 3. 计算并显示结果
+
+3.2 card_data 结构 (龙虎版本)
+
+{
+  "desk_id": "F1",
+  "game_number": "12345",
+  "xue": 1,
+  "pu": 15,
+  "timestamp": "2025-12-12T19:30:00",
+  "screenshot": "F1_game12345.png",
+  "card_data": {
+    "1": "13|h",   // 龙牌: K 黑桃
+    "2": "10|r"    // 虎牌: 10 红桃
+  },
+  "card_positions": [...],
+  "card_crops": {
+    "1": "F1_game12345_card1.png",
+    "2": "F1_game12345_card2.png"
+  },
+  "ai_result": {
+    "1": "13|h",   // 龙牌
+    "2": "10|r"    // 虎牌
+  }
+}
+
+================================================================================
+
+4. 截图流程
+--------------------------------------------------------------------------------
+
+4.1 触发条件
+
+# browser.py: _check_dom_changes()
+
+# 牌面从不可见变为可见 → 触发截图
+if cards_visible and not old_visible:
+    game_number = dom_state.get("game_number")
+    if game_number and game_number not in self.captured_games:
+        await asyncio.sleep(0.8)  # 等待翻牌动画
+        await self._capture_cards(game_number, cards_info)
+
+4.2 截图步骤
+
+# browser.py: _capture_cards()
+
+async def _capture_cards(self, game_number: str, cards_info: Dict):
+    # 1. 生成文件名
+    filename_base = f"{desk_id}_game{game_number}"
+
+    # 2. 整体截图
+    await self._page.screenshot(path=str(screenshot_path))
+
+    # 3. 对每张扑克元素单独截图 (龙虎2张牌)
+    card_crops = await self._capture_card_elements(filename_base)
+
+    # 4. AI识别
+    ai_result = self._recognize_cards_by_ai(card_crops)
+
+    # 5. 保存JSON数据
+    with open(json_path, "w") as f:
+        json.dump(card_data, f)
+
+    # 6. 发送开牌数据到后端 (龙虎至少需要2张有效牌)
+    if ai_result and valid_cards >= 2:
+        await self.send_open_card(ai_result)
+
+    # 7. 触发GUI回调
+    if self.on_cards_captured:
+        self.on_cards_captured(str(screenshot_path), card_data)
+
+4.3 扑克元素选择器 (龙虎版本)
+
+card_selectors = [
+    (1, ".d-card-result-root.card-result .dragon-result-group .card1"),  # 龙牌
+    (2, ".d-card-result-root.card-result .tiger-result-group .card1"),   # 虎牌
+]
+
+================================================================================
+
+5. 牌型显示
+--------------------------------------------------------------------------------
+
+5.1 花色符号映射
+
+suit_symbols = {
+    "h": "♠",  # 黑桃
+    "r": "♥",  # 红桃
+    "m": "♣",  # 梅花
+    "f": "♦"   # 方块
+}
+
+5.2 点数显示转换
+
+value_display = {
+    1: "A",
+    11: "J",
+    12: "Q",
+    13: "K"
+}.get(int(value), value)
+
+5.3 显示示例 (龙虎版本)
+
+龙牌: ♠K
+虎牌: ♥10
+
+================================================================================
+
+6. 结果显示 (龙虎版本)
+--------------------------------------------------------------------------------
+
+6.1 直接比大小
+
+龙虎直接比较牌面点数: K(13) > Q(12) > J(11) > 10 > 9 > ... > A(1)
+
+def calc_result(cards_dict):
+    dragon_str = cards_dict.get("1", "0|0")
+    tiger_str = cards_dict.get("2", "0|0")
+
+    dragon_value = int(dragon_str.split("|")[0])
+    tiger_value = int(tiger_str.split("|")[0])
+
+    return dragon_value, tiger_value
+
+dragon_val, tiger_val = calc_result(cards)
+
+6.2 显示结果
+
+if dragon_val > tiger_val:
+    result_text = f"龙赢 ({dragon_val}:{tiger_val})"
+    result_color = "#e74c3c"  # 红色
+elif tiger_val > dragon_val:
+    result_text = f"虎赢 ({tiger_val}:{dragon_val})"
+    result_color = "#3498db"  # 蓝色
+else:
+    result_text = f"和局 ({dragon_val}:{tiger_val})"
+    result_color = "#27ae60"  # 绿色
+
+================================================================================
+
+7. 相关文件
+--------------------------------------------------------------------------------
+
+    文件                        函数                        说明
+    ----                        ----                        ----
+    main.py                     on_cards_captured()         截图回调处理
+    main.py                     _update_screenshot_preview() 更新大截图
+    main.py                     _update_card_previews()     更新2张小扑克
+    monitor/browser.py          _capture_cards()            执行截图
+    monitor/browser.py          _capture_card_elements()    裁剪扑克元素
+    screenshots/                *.png, *.json               截图和数据文件
+
+================================================================================

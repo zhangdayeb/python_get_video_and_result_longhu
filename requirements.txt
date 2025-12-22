@@ -1,0 +1,34 @@
+# 龙虎监控系统依赖包
+
+# HTTP 异步请求
+aiohttp>=3.8.0
+
+# 浏览器自动化
+playwright>=1.40.0
+
+# 数据库
+pymysql>=1.1.0
+aiomysql>=0.2.0
+aiosqlite>=0.19.0
+
+# 图像处理
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# AI 模型识别 (PyTorch ResNet101)
+# 注意: 如果有 NVIDIA GPU，可以安装 torch 和 torchvision 的 CUDA 版本以加速推理
+# CPU 版本: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+torchvision>=0.15.0
+
+# OCR 识别 (可选，已被 AI 模型替代)
+# pytesseract>=0.3.10
+
+# HTTP 同步请求
+requests>=2.31.0
+
+# 系统监控
+psutil>=5.9.0
+
+# 其他工具
+python-dateutil>=2.8.0

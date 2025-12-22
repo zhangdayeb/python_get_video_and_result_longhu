@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+"""
+结束信号API - 发送停止下注信号
+"""
+import logging
+
+import aiohttp
+
+from core.config import config
+from api.response import APIResponse
+
+logger = logging.getLogger(__name__)
+
+
+async def send_end_signal(desk_id: int) -> APIResponse:
+    """
+    发送结束信号 (停止下注)
+
+    Args:
+        desk_id: 利博桌号
+
+    Returns:
+        APIResponse
+    """
+    base_url = config.get("backend_api.base_url", "")
+    endpoints = config.get("backend_api.endpoints", {})
+    timeout = aiohttp.ClientTimeout(total=config.get("backend_api.timeout", 10))
+    desk_mapping = config.desk_mapping
+
+    table_id = desk_mapping.get(str(desk_id), desk_id)
+    url = f"{base_url}{endpoints.get('end_signal', '')}"
+    params = {"tableId": table_id}
+
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.text()
+                    logger.info(f"[桌{desk_id}] 结束信号发送成功")
+                    return APIResponse(success=True, data=data, status_code=response.status)
+                else:
+                    logger.error(f"[桌{desk_id}] 结束信号发送失败: HTTP {response.status}")
+                    return APIResponse(success=False, error=f"HTTP {response.status}", status_code=response.status)
+    except Exception as e:
+        logger.error(f"[桌{desk_id}] 结束信号发送异常: {e}")
+        return APIResponse(success=False, error=str(e))
