@@ -14,7 +14,7 @@
     "game_url": "https://www.559156667.com/game?desk={desk}&gameType=2&xian=1"
   },
   "mysql": {
-    "host": "13.212.181.21",
+    "host": "47.83.177.240",
     "port": 3306,
     "user": "ntp_bjl_libo",
     "password": "TRbBnAEnkiM57n5E",

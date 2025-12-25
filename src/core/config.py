@@ -47,7 +47,7 @@ class ConfigManager:
         获取配置值（支持点号路径）
 
         Example:
-            config.get("mysql.host")  # "13.212.181.21"
+            config.get("mysql.host")  # "47.83.177.240"
             config.get("api.urls")    # ["https://...", ...]
         """
         if self._config is None:
