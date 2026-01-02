@@ -6,10 +6,9 @@ import asyncio
 import zlib
 import logging
 
-import aiohttp
-
 from core.config import config
 from api.response import APIResponse
+from api.http_client import get_shared_session, get_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class APIFetcher:
         self.api_url = api_urls[0] if api_urls else ""
         self.skey = config.get("api.skey", "")
         self.jm = config.get("api.jm", 1)
-        self.timeout = aiohttp.ClientTimeout(total=config.get("api.timeout", 10))
+        self.timeout = config.get("api.timeout", 10)
 
         self._url_index = 0
         self._consecutive_failures = 0
@@ -88,32 +87,33 @@ class APIFetcher:
         }
 
         try:
-            async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                async with session.get(self.api_url, params=params) as response:
-                    if response.status == 200:
-                        raw_data = await response.read()
+            session = await get_shared_session()
+            timeout = get_timeout(self.timeout)
+            async with session.get(self.api_url, params=params, timeout=timeout) as response:
+                if response.status == 200:
+                    raw_data = await response.read()
 
-                        try:
-                            decrypted = self._decrypt(raw_data)
-                            self._consecutive_failures = 0
-                            return APIResponse(
-                                success=True,
-                                data=decrypted,
-                                status_code=response.status
-                            )
-                        except ValueError as e:
-                            return APIResponse(
-                                success=False,
-                                error=str(e),
-                                status_code=response.status
-                            )
-                    else:
-                        self._consecutive_failures += 1
+                    try:
+                        decrypted = self._decrypt(raw_data)
+                        self._consecutive_failures = 0
                         return APIResponse(
-                            success=False,
-                            error=f"HTTP {response.status}",
+                            success=True,
+                            data=decrypted,
                             status_code=response.status
                         )
+                    except ValueError as e:
+                        return APIResponse(
+                            success=False,
+                            error=str(e),
+                            status_code=response.status
+                        )
+                else:
+                    self._consecutive_failures += 1
+                    return APIResponse(
+                        success=False,
+                        error=f"HTTP {response.status}",
+                        status_code=response.status
+                    )
 
         except asyncio.TimeoutError:
             self._consecutive_failures += 1

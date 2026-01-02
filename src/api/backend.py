@@ -5,8 +5,6 @@
 import logging
 from typing import Dict, Optional
 
-import aiohttp
-
 from core.config import config
 from api.response import APIResponse
 from api.online_start import send_start_signal
@@ -14,6 +12,7 @@ from api.online_end import send_end_signal
 from api.online_post_data import send_open_card
 from api.online_add_xue import send_add_xue
 from api.online_get_xue_pu import get_current_xue_pu, get_roadmap_full, get_caiji_config, get_last_n_results, sync_incremental
+from api.http_client import get_shared_session, get_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,7 @@ class BackendAPI:
 
     def __init__(self):
         self.base_url = config.get("backend_api.base_url", "")
-        self.timeout = aiohttp.ClientTimeout(total=config.get("backend_api.timeout", 10))
+        self.timeout = config.get("backend_api.timeout", 10)
 
     async def send_start_signal(self, desk_id: int, countdown_time: int = 45) -> APIResponse:
         """发送开局信号 (开始下注)"""
@@ -74,14 +73,15 @@ class BackendAPI:
         """测试后端 API 连接"""
         try:
             url = f"{self.base_url}/bjl/get_table/list"
-            async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        logger.info("后端 API 连接测试成功")
-                        return True
-                    else:
-                        logger.warning(f"后端 API 连接测试失败: HTTP {response.status}")
-                        return False
+            session = await get_shared_session()
+            timeout = get_timeout(self.timeout)
+            async with session.get(url, timeout=timeout) as response:
+                if response.status == 200:
+                    logger.info("后端 API 连接测试成功")
+                    return True
+                else:
+                    logger.warning(f"后端 API 连接测试失败: HTTP {response.status}")
+                    return False
         except Exception as e:
             logger.error(f"后端 API 连接测试异常: {e}")
             return False
